@@ -283,6 +283,14 @@ class Repository(github.GithubObject.CompletableGithubObject):
         return self._default_branch.value
 
     @property
+    def delete_branch_on_merge(self):
+        """
+        :type: bool
+        """
+        self._completeIfNotSet(self._delete_branch_on_merge)
+        return self._delete_branch_on_merge.value
+
+    @property
     def description(self):
         """
         :type: string
@@ -1120,7 +1128,7 @@ class Repository(github.GithubObject.CompletableGithubObject):
         :param title: string
         :param body: string
         :param assignee: string or :class:`github.NamedUser.NamedUser`
-        :param assignees: list (of string or :class:`github.NamedUser.NamedUser`)
+        :param assignees: list of string or :class:`github.NamedUser.NamedUser`
         :param milestone: :class:`github.Milestone.Milestone`
         :param labels: list of :class:`github.Label.Label`
         :rtype: :class:`github.Issue.Issue`
@@ -1399,6 +1407,7 @@ class Repository(github.GithubObject.CompletableGithubObject):
         allow_squash_merge=github.GithubObject.NotSet,
         allow_merge_commit=github.GithubObject.NotSet,
         allow_rebase_merge=github.GithubObject.NotSet,
+        delete_branch_on_merge=github.GithubObject.NotSet,
         archived=github.GithubObject.NotSet,
     ):
         """
@@ -1415,6 +1424,7 @@ class Repository(github.GithubObject.CompletableGithubObject):
         :param allow_squash_merge: bool
         :param allow_merge_commit: bool
         :param allow_rebase_merge: bool
+        :param delete_branch_on_merge: bool
         :param archived: bool. Unarchiving repositories is currently not supported through API (https://developer.github.com/v3/repos/#edit)
         :rtype: None
         """
@@ -1454,6 +1464,9 @@ class Repository(github.GithubObject.CompletableGithubObject):
         assert allow_rebase_merge is github.GithubObject.NotSet or isinstance(
             allow_rebase_merge, bool
         ), allow_rebase_merge
+        assert delete_branch_on_merge is github.GithubObject.NotSet or isinstance(
+            delete_branch_on_merge, bool
+        ), delete_branch_on_merge
         assert archived is github.GithubObject.NotSet or (
             isinstance(archived, bool) and archived is True
         ), archived
@@ -1482,6 +1495,8 @@ class Repository(github.GithubObject.CompletableGithubObject):
             post_parameters["allow_merge_commit"] = allow_merge_commit
         if allow_rebase_merge is not github.GithubObject.NotSet:
             post_parameters["allow_rebase_merge"] = allow_rebase_merge
+        if delete_branch_on_merge is not github.GithubObject.NotSet:
+            post_parameters["delete_branch_on_merge"] = delete_branch_on_merge
         if archived is not github.GithubObject.NotSet:
             post_parameters["archived"] = archived
         headers, data = self._requester.requestJsonAndCheck(
@@ -2052,7 +2067,7 @@ class Repository(github.GithubObject.CompletableGithubObject):
             organization, str
         ), organization
         post_parameters = {}
-        if organization is not None:
+        if organization is not github.GithubObject.NotSet:
             post_parameters["organization"] = organization
         headers, data = self._requester.requestJsonAndCheck(
             "POST", self.url + "/forks", input=post_parameters,
@@ -2192,7 +2207,7 @@ class Repository(github.GithubObject.CompletableGithubObject):
         :param state: string. `open`, `closed`, or `all`. If this is not set the GitHub API default behavior will be used. At the moment this is to return only open issues. This might change anytime on GitHub API side and it could be clever to explicitly specify the state value.
         :param assignee: string or :class:`github.NamedUser.NamedUser` or "none" or "*"
         :param mentioned: :class:`github.NamedUser.NamedUser`
-        :param labels: list of :class:`github.Label.Label`
+        :param labels: list of string or :class:`github.Label.Label`
         :param sort: string
         :param direction: string
         :param since: datetime.datetime
@@ -2215,7 +2230,8 @@ class Repository(github.GithubObject.CompletableGithubObject):
             mentioned, github.NamedUser.NamedUser
         ), mentioned
         assert labels is github.GithubObject.NotSet or all(
-            isinstance(element, github.Label.Label) for element in labels
+            isinstance(element, github.Label.Label) or isinstance(element, str)
+            for element in labels
         ), labels
         assert sort is github.GithubObject.NotSet or isinstance(sort, str), sort
         assert direction is github.GithubObject.NotSet or isinstance(
@@ -2245,7 +2261,12 @@ class Repository(github.GithubObject.CompletableGithubObject):
         if mentioned is not github.GithubObject.NotSet:
             url_parameters["mentioned"] = mentioned._identity
         if labels is not github.GithubObject.NotSet:
-            url_parameters["labels"] = ",".join(label.name for label in labels)
+            url_parameters["labels"] = ",".join(
+                [
+                    label.name if isinstance(label, github.Label.Label) else label
+                    for label in labels
+                ]
+            )
         if sort is not github.GithubObject.NotSet:
             url_parameters["sort"] = sort
         if direction is not github.GithubObject.NotSet:
@@ -3115,6 +3136,7 @@ class Repository(github.GithubObject.CompletableGithubObject):
         self._contributors_url = github.GithubObject.NotSet
         self._created_at = github.GithubObject.NotSet
         self._default_branch = github.GithubObject.NotSet
+        self._delete_branch_on_merge = github.GithubObject.NotSet
         self._description = github.GithubObject.NotSet
         self._downloads_url = github.GithubObject.NotSet
         self._events_url = github.GithubObject.NotSet
@@ -3223,6 +3245,10 @@ class Repository(github.GithubObject.CompletableGithubObject):
         if "default_branch" in attributes:  # pragma no branch
             self._default_branch = self._makeStringAttribute(
                 attributes["default_branch"]
+            )
+        if "delete_branch_on_merge" in attributes:  # pragma no branch
+            self._delete_branch_on_merge = self._makeBoolAttribute(
+                attributes["delete_branch_on_merge"]
             )
         if "description" in attributes:  # pragma no branch
             self._description = self._makeStringAttribute(attributes["description"])

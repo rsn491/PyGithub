@@ -1,14 +1,8 @@
+# -*- coding: utf-8 -*-
+
 ############################ Copyrights and license ############################
 #                                                                              #
-# Copyright 2012 Vincent Jacques <vincent@vincent-jacques.net>                 #
-# Copyright 2013 AKFish <akfish@gmail.com>                                     #
-# Copyright 2013 Vincent Jacques <vincent@vincent-jacques.net>                 #
-# Copyright 2014 Nic Dahlquist <nic@snapchat.com>                              #
-# Copyright 2014 Vincent Jacques <vincent@vincent-jacques.net>                 #
-# Copyright 2016 Peter Buckley <dx-pbuckley@users.noreply.github.com>          #
-# Copyright 2017 Chris McBride <thehighlander@users.noreply.github.com>        #
-# Copyright 2017 Colin Hoglund <colinhoglund@users.noreply.github.com>         #
-# Copyright 2018 sfdye <tsfdye@gmail.com>                                      #
+# Copyright 2019 Olof-Joachim Frahm <olof@macrolet.net>                        #
 #                                                                              #
 # This file is part of PyGithub.                                               #
 # http://pygithub.readthedocs.io/                                              #
@@ -28,21 +22,27 @@
 #                                                                              #
 ################################################################################
 
-*.pyc
-.eggs/
-.python-version
+from . import Framework
 
-/GithubCredentials.py
-/scripts/TwitterCredentials.py
-/dist/
-/build/
-/MANIFEST
-/PyGithub.egg-info/
-/.coverage
-/.idea
-/developer.github.com/
-/gh-pages/
-/doc/doctrees/
-.vscode*
-.venv
-.tox/
+
+class PullRequest1375(Framework.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.pr = self.g.get_repo("rsn491/PyGithub").get_pulls()[0]
+
+    def testCreateReviewCommentReply(self):
+        comment_id = 373866377  # id of pull request comment without replies
+        first_reply_body = "Comment reply created by PyGithub"
+        second_reply_body = "Second comment reply created by PyGithub"
+
+        first_reply = self.pr.create_review_comment_reply(comment_id, first_reply_body)
+        second_reply = self.pr.create_review_comment_reply(
+            first_reply.id, second_reply_body
+        )
+
+        # ensure both first and second reply have `in_reply_to_id` attr set to top comment
+        self.assertEqual(first_reply.in_reply_to_id, comment_id)
+        self.assertEqual(second_reply.in_reply_to_id, comment_id)
+
+        self.assertEqual(first_reply.body, first_reply_body)
+        self.assertEqual(second_reply.body, second_reply_body)

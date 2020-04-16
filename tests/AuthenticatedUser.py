@@ -344,6 +344,7 @@ class AuthenticatedUser(Framework.TestCase):
             allow_squash_merge=False,
             allow_merge_commit=False,
             allow_rebase_merge=True,
+            delete_branch_on_merge=False,
         )
         self.assertEqual(repo.url, "https://api.github.com/repos/jacquev6/TestPyGithub")
 
@@ -711,8 +712,19 @@ class AuthenticatedUser(Framework.TestCase):
 
     def testGetInvitations(self):
         invitation = self.user.get_invitations()[0]
+        self.assertEqual(repr(invitation), "Invitation(id=17285388)")
         self.assertEqual(invitation.id, 17285388)
         self.assertEqual(invitation.permissions, "write")
+        created_at = datetime.datetime(2019, 6, 27, 11, 47)
+        self.assertEqual(invitation.created_at, created_at)
+        self.assertEqual(
+            invitation.url,
+            "https://api.github.com/user/repository_invitations/17285388",
+        )
+        self.assertEqual(
+            invitation.html_url, "https://github.com/jacquev6/PyGithub/invitations"
+        )
+        self.assertEqual(invitation.repository.name, "PyGithub")
         self.assertEqual(invitation.invitee.login, "foobar-test1")
         self.assertEqual(invitation.inviter.login, "jacquev6")
 
